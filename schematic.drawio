@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="o6oXbiHLsRgW8ZbffLWj">
-        <mxGraphModel dx="1509" dy="1576" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="2225" dy="1724" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -118,6 +118,17 @@
                         <mxPoint y="1" as="offset"/>
                     </mxGeometry>
                 </mxCell>
+                <mxCell id="89" style="edgeStyle=none;html=1;exitX=0;exitY=0;exitDx=0;exitDy=70;exitPerimeter=0;endArrow=none;endFill=0;entryX=1;entryY=0.84;entryDx=0;entryDy=0;" edge="1" parent="1" source="01QlHqz9dvcS7RnoM5NJ-3" target="92">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-440" y="-582.3529411764705" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="90" style="edgeStyle=none;html=1;exitX=0;exitY=0;exitDx=0;exitDy=90;exitPerimeter=0;endArrow=none;endFill=0;entryX=1;entryY=0.84;entryDx=0;entryDy=0;" edge="1" parent="1" source="01QlHqz9dvcS7RnoM5NJ-3" target="93">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-470" y="-562.3529411764705" as="targetPoint"/>
+                        <Array as="points"/>
+                    </mxGeometry>
+                </mxCell>
                 <mxCell id="01QlHqz9dvcS7RnoM5NJ-3" value="&lt;div&gt;Arduino Pro&amp;nbsp;&lt;/div&gt;&lt;div&gt;Micro 3.3V&lt;/div&gt;" style="shadow=0;dashed=0;align=center;html=1;strokeWidth=1;shape=mxgraph.electrical.logic_gates.dual_inline_ic;labelNames=a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t;whiteSpace=wrap;rounded=1;" parent="1" vertex="1">
                     <mxGeometry x="-290" y="-652.5" width="137" height="240" as="geometry"/>
                 </mxCell>
@@ -217,6 +228,21 @@
                     <mxGeometry x="-0.1152" y="1" relative="1" as="geometry">
                         <mxPoint y="1" as="offset"/>
                     </mxGeometry>
+                </mxCell>
+                <mxCell id="96" style="edgeStyle=none;html=1;exitX=0;exitY=0.84;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="92" target="95">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="92" value="" style="shape=mxgraph.electrical.electro-mechanical.switchDisconnector;aspect=fixed;elSwitchState=off;" vertex="1" parent="1">
+                    <mxGeometry x="-520" y="-600" width="75" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="97" style="edgeStyle=none;html=1;exitX=0;exitY=0.84;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="93" target="95">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="93" value="" style="shape=mxgraph.electrical.electro-mechanical.switchDisconnector;aspect=fixed;elSwitchState=off;" vertex="1" parent="1">
+                    <mxGeometry x="-520" y="-550" width="75" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="95" value="" style="shape=stencil(tZRNDoIwEIVP063pj7g3qPcoOEojtKRU1NtbqBgr1CjChmTey3y8ZqZFLK4yXgKiOENsgyil2H5sefFLXpWQGqfVXAue5OCcymh1govYmwdByAy0MI3LtgivUcPAiMWpktJChJKV57z4FsaFtL346mCP39+8qrT8AgxopxKnIrr7HruI5gGTmfL62C795HmnA/uJyVyDmwxMxmNZbJXQcrM44enpqNVZ7vtdQe+gNAwYT1vkubt4H45Z8uZK9ozOLlQNL+cfvGnD6I6QCxkmRL8Tlv8C3iIQOgKxmjjER0K7BIE52ac5NOG2rbcireqe81a4Aw==);whiteSpace=wrap;html=1;direction=north;rounded=1;rotation=-180;" vertex="1" parent="1">
+                    <mxGeometry x="-590" y="-570" width="30" height="30" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

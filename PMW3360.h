@@ -134,7 +134,7 @@ public:
   	void setCPI(unsigned int newCPI);
   	// setCPI: get CPI value (it does read CPI register from the module)
   	unsigned int getCPI();
-  	PMW3360_DATA readBurst();
+  	void readBurst(PMW3360_DATA& data);
   	byte readReg(byte reg_addr);
   	void writeReg(byte reg_addr, byte data);
   	void prepareImage();

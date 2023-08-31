@@ -37,44 +37,68 @@ Module   Arduino
                                raw data values within normal operating ranges.
  */
 
-#define SS  18   
 PMW3360 sensor;
 
-//int button1 = 2;
-//int button2 = 3;
-void setup() {
-	//Serial.begin(9600);  
-	// Slave Select pin. Connect this to SS on the module.
-    //pinMode(button1, INPUT_PULLUP);
-    //pinMode(button2, INPUT_PULLUP);
-    constexpr uint8_t selectionPin = 18;
+// Slave Select pin. Connect this to SS on the module.
+constexpr uint8_t selectionPin = 18;
+constexpr uint8_t button1 = 2;
+constexpr uint8_t button2 = 3;
+constexpr uint8_t NUM_BUTTONS = 2;
+PMW3360_DATA data;
 
+struct ButtonData
+{
+    uint8_t pin;
+    uint8_t mButton;
+    bool previousInVal;
+};
+
+ButtonData buttons[NUM_BUTTONS] = {{button1, MOUSE_LEFT, false}, {button2, MOUSE_RIGHT, false}};
+
+void readButtons()
+{
+    for(int i = 0; i < NUM_BUTTONS; i++)
+    {
+        uint8_t bVal = digitalRead(buttons[i].pin);
+        if(bVal && buttons[i].previousInVal)
+        {
+            Mouse.release(buttons[i].mButton);
+            buttons[i].previousInVal = false;
+        }
+        else if(!bVal)
+        {
+            Mouse.press(buttons[i].mButton);
+            buttons[i].previousInVal = true;
+        }
+    }
+} 
+
+void readSensor()
+{
+	sensor.readBurst(data);
+    if(data.isOnSurface && data.isMotion)
+	{
+        Serial.print(data.dx);
+        Serial.print("\t");
+        Serial.print(data.dy);
+        Serial.println();
+        Mouse.move(data.dx, -data.dy, 0);
+	}
+}
+
+void setup() 
+{
+	Serial.begin(9600);
+    pinMode(button1, INPUT_PULLUP);
+    pinMode(button2, INPUT_PULLUP);
   	Mouse.begin();
-  	//while(!Serial);
-  
-  	sensor.begin(SS);
+
+  	sensor.begin(selectionPin);
   //sensor.begin(10, 1600); // to set CPI (Count per Inch), pass it as the second parameter
-  //if(sensor.begin(selectionPin))  // 10 is the pin connected to SS of the module.
-  // Serial.println("Sensor initialization successed");
- // else
- //   Serial.println("Sensor initialization failed");
-  
-  //sensor.setCPI(1600);    // or, you can set CPI later by calling setCPI();
 }
 
 void loop() {
-    //TODO: optimize this to only use one data struct instead of creating a new one every loop
-    //Make readBurst receive a data struct reference
-	PMW3360_DATA data = sensor.readBurst();
-    //Serial.println(digitalRead(button1));
-    //Serial.println(digitalRead(button2));
- 	 if(data.isOnSurface && data.isMotion)
-	{
-		//  Serial.print(data.dx);
-		//  Serial.print("\t");
-		//  Serial.print(data.dy);
-		//  Serial.println();
-		Mouse.move(data.dx, -data.dy, 0);
-	}
+    readSensor();
+    readButtons();
 	delay(10);
 }

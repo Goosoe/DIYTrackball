@@ -399,11 +399,8 @@ unsigned int PMW3360::getCPI()
 // public
 /* 
 readBurst: get one frame of motion data. 
-
-# retrun
-type: PMW3360_DATA
 */
-PMW3360_DATA PMW3360::readBurst()
+void PMW3360::readBurst(PMW3360_DATA& data)
 {  
   unsigned long fromLast = micros() - _lastBurst;
   byte burstBuffer[12];
@@ -433,8 +430,6 @@ PMW3360_DATA PMW3360::readBurst()
 
   _lastBurst = micros();
 
-  PMW3360_DATA data;
-
   bool motion = (burstBuffer[0] & 0x80) != 0;
   bool surface = (burstBuffer[0] & 0x08) == 0;   // 0 if on surface / 1 if off surface
 
@@ -458,8 +453,6 @@ PMW3360_DATA PMW3360::readBurst()
   data.maxRawData = burstBuffer[8];
   data.minRawData = burstBuffer[9];
   data.shutter = shutter;
-
-  return data;
 }
 
 // public
