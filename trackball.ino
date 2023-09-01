@@ -100,5 +100,4 @@ void setup()
 void loop() {
     readSensor();
     readButtons();
-	delay(10);
 }
