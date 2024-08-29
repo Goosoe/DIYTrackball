@@ -22,6 +22,62 @@ Module   Arduino
   MI --- MISO
   VI --- 5V
 
+ */
+
+PMW3360 pmwSensor;
+
+// Slave Select pin. Connect this to SS on the module.
+constexpr uint8_t SS_PIN = 18;
+constexpr uint16_t CPI = 1000;
+constexpr uint8_t B1_PIN = 2;
+constexpr uint8_t B2_PIN = 3;
+constexpr uint8_t B3_PIN = 21;
+constexpr uint8_t ENCODER_A= 7;
+constexpr uint8_t ENCODER_B = 8;
+
+PMW3360_DATA data;
+
+uint8_t encoderAVal;
+uint8_t encoderPrevAVal;
+
+struct ButtonData
+{
+    uint8_t pin;
+    uint8_t mButton;
+};
+
+constexpr uint8_t NUM_BUTTONS = 3;
+constexpr ButtonData buttons[NUM_BUTTONS] = {{B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}};
+uint8_t previousButtonVals[NUM_BUTTONS] = {false};
+
+/* BUTTONS FUNCTIONS */
+void setupButtons()
+{
+    pinMode(B1_PIN, INPUT_PULLUP);
+    pinMode(B2_PIN, INPUT_PULLUP);
+    pinMode(B3_PIN, INPUT_PULLUP);
+}
+
+void readButtons()
+{
+    for(int i = 0; i < NUM_BUTTONS; i++)
+    {
+        uint8_t bVal = digitalRead(buttons[i].pin);
+        if(bVal && previousButtonVals[i])
+        {
+            Mouse.release(buttons[i].mButton);
+            previousButtonVals[i] = false;
+        }
+        else if(!bVal)
+        {
+            Mouse.press(buttons[i].mButton);
+            previousButtonVals[i] = true;
+        }
+    }
+} 
+
+/* PMW3360 FUNCTIONS */
+/*
 # PMW3360_DATA struct format and description
   - PMW3360_DATA.isMotion      : bool, True if a motion is detected. 
   - PMW3360_DATA.isOnSurface   : bool, True when a chip is on a surface 
@@ -35,65 +91,53 @@ Module   Arduino
     PMW3360_DATA.minRawData
   - PMW3360_DATA.shutter       : unsigned int, shutter is adjusted to keep the average
                                raw data values within normal operating ranges.
- */
-
-PMW3360 sensor;
-
-// Slave Select pin. Connect this to SS on the module.
-constexpr uint8_t SS_PIN = 18;
-constexpr uint8_t NUM_BUTTONS = 2;
-constexpr uint16_t CPI = 1000;
-constexpr uint8_t B1_PIN = 2;
-constexpr uint8_t B2_PIN = 3;
-PMW3360_DATA data;
-
-struct ButtonData
+*/
+void readPMWSensor()
 {
-    uint8_t pin;
-    uint8_t mButton;
-    bool previousInVal;
-};
-
-ButtonData buttons[NUM_BUTTONS] = {{B1_PIN, MOUSE_LEFT, false}, {B2_PIN, MOUSE_RIGHT, false}};
-
-void readButtons()
-{
-    for(int i = 0; i < NUM_BUTTONS; i++)
-    {
-        uint8_t bVal = digitalRead(buttons[i].pin);
-        if(bVal && buttons[i].previousInVal)
-        {
-            Mouse.release(buttons[i].mButton);
-            buttons[i].previousInVal = false;
-        }
-        else if(!bVal)
-        {
-            Mouse.press(buttons[i].mButton);
-            buttons[i].previousInVal = true;
-        }
-    }
-} 
-
-void readSensor()
-{
-	sensor.readBurst(data);
+	pmwSensor.readBurst(data);
     if(data.isOnSurface && data.isMotion)
 	{
         Mouse.move(data.dx, -data.dy, 0);
 	}
 }
 
+
+/* ENCODER FUNCTIONS */
+void setupEncoder()
+{
+    pinMode(ENCODER_A, INPUT_PULLUP);
+    pinMode(ENCODER_B, INPUT_PULLUP);
+    encoderPrevAVal = digitalRead(ENCODER_A);
+}
+
+void readEncoder()
+{
+    encoderAVal = digitalRead(ENCODER_A);
+    if(encoderAVal != encoderPrevAVal)
+    {
+        if(digitalRead(ENCODER_B) != encoderAVal)
+        {
+            Mouse.move(10, 0, 1);
+        }
+        else 
+        {
+            Mouse.move(-10, 0, 1);
+        }
+        encoderPrevAVal = encoderAVal;
+    }
+}
+/**/
+
 void setup() 
 {
-    pinMode(B1_PIN, INPUT_PULLUP);
-    pinMode(B2_PIN, INPUT_PULLUP);
-  	Mouse.begin();
-
-  //	sensor.begin(selectionPin);
-  sensor.begin(SS_PIN, CPI); // to set CPI (Count per Inch), pass it as the second parameter
+    setupButtons();
+    setupEncoder();
+    Mouse.begin();
+    pmwSensor.begin(SS_PIN, CPI); // to set CPI (Count per Inch), pass it as the second parameter
 }
 
 void loop() {
-    readSensor();
+    readPMWSensor();
     readButtons();
+    readEncoder();
 }
