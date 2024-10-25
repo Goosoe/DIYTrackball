@@ -36,10 +36,9 @@ constexpr static uint8_t ENCODER_B = 1;
 
 // Trackball settings
 constexpr static uint16_t CPI = 800;
-//higher number, slower it gets
-constexpr static uint16_t SCROLL_SENS = 1000;
 constexpr static uint16_t TIME_TO_SCROLL = 150; //ms
 constexpr static uint16_t SCROLL_SPEED_CLAMP = 8; 
+//
 PMW3360_DATA data;
 
 
