@@ -27,18 +27,28 @@ Module   Arduino
 PMW3360 pmwSensor;
 
 // Slave Select pin. Connect this to SS on the module.
-constexpr uint8_t SS_PIN = 18;
-constexpr uint16_t CPI = 1000;
-constexpr uint8_t B1_PIN = 2;
-constexpr uint8_t B2_PIN = 3;
-constexpr uint8_t B3_PIN = 21;
-constexpr uint8_t ENCODER_A= 7;
-constexpr uint8_t ENCODER_B = 8;
+constexpr static uint8_t SS_PIN = 18;
+constexpr static uint8_t B1_PIN = 2;
+constexpr static uint8_t B2_PIN = 3;
+constexpr static uint8_t B3_PIN = 21;
+constexpr static uint8_t ENCODER_A= 0;
+constexpr static uint8_t ENCODER_B = 1;
 
+// Trackball settings
+constexpr static uint16_t CPI = 800;
+//higher number, slower it gets
+constexpr static uint16_t SCROLL_SENS = 1000;
+constexpr static uint16_t TIME_TO_SCROLL = 150; //ms
+constexpr static uint16_t SCROLL_SPEED_CLAMP = 8; 
 PMW3360_DATA data;
 
-uint8_t encoderAVal;
-uint8_t encoderPrevAVal;
+
+volatile int8_t scrollDir = 0;
+uint8_t lastEncoded = 0;
+// ATTENTION: Right now there is no overflow guard. It will overflow in around 50 days.
+// Who ever has this turned on for that long? If you do, add an overflow guard in the main loop
+unsigned long prevElapsedMillis = 0;
+
 
 struct ButtonData
 {
@@ -46,8 +56,8 @@ struct ButtonData
     uint8_t mButton;
 };
 
-constexpr uint8_t NUM_BUTTONS = 3;
-constexpr ButtonData buttons[NUM_BUTTONS] = {{B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}};
+constexpr static uint8_t NUM_BUTTONS = 3;
+constexpr static ButtonData buttons[NUM_BUTTONS] = {{B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}};
 uint8_t previousButtonVals[NUM_BUTTONS] = {false};
 
 /* BUTTONS FUNCTIONS */
@@ -74,6 +84,8 @@ void readButtons()
             previousButtonVals[i] = true;
         }
     }
+    // add a delay to avoid double click ghosting
+    delay(10);
 } 
 
 /* PMW3360 FUNCTIONS */
@@ -97,7 +109,7 @@ void readPMWSensor()
 	pmwSensor.readBurst(data);
     if(data.isOnSurface && data.isMotion)
 	{
-        Mouse.move(data.dx, -data.dy, 0);
+        Mouse.move(data.dy, data.dx, 0);
 	}
 }
 
@@ -107,23 +119,36 @@ void setupEncoder()
 {
     pinMode(ENCODER_A, INPUT_PULLUP);
     pinMode(ENCODER_B, INPUT_PULLUP);
-    encoderPrevAVal = digitalRead(ENCODER_A);
+    // We will be using interrupts to receive the encoder data
+    attachInterrupt(digitalPinToInterrupt(ENCODER_A), updateEncoder, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENCODER_B), updateEncoder, CHANGE);
 }
 
-void readEncoder()
+void updateEncoder() {
+  int MSB = digitalRead(ENCODER_A); // MSB = most significant bit
+  int LSB = digitalRead(ENCODER_B); // LSB = least significant bit
+
+  int encoded = (MSB << 1) | LSB; // Converting the 2 pin value to single number
+  int sum  = (lastEncoded << 2) | encoded; // Adding it to the previous encoded value
+
+  if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) scrollDir++;
+  if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) scrollDir--;
+  constrain(scrollDir, -SCROLL_SPEED_CLAMP, SCROLL_SPEED_CLAMP);
+
+  lastEncoded = encoded; // Store this value for next time
+}
+
+void updateScroll()
 {
-    encoderAVal = digitalRead(ENCODER_A);
-    if(encoderAVal != encoderPrevAVal)
+     unsigned long currentTime = millis();
+    if(currentTime - prevElapsedMillis > TIME_TO_SCROLL)
     {
-        if(digitalRead(ENCODER_B) != encoderAVal)
-        {
-            Mouse.move(10, 0, 1);
-        }
-        else 
-        {
-            Mouse.move(-10, 0, 1);
-        }
-        encoderPrevAVal = encoderAVal;
+      // this guard is for keeping the pro micro light off. It will seem like a disco ball blinking constantly if we always call Mouse.move
+      if(scrollDir != 0)
+      {
+        Mouse.move(0, 0, scrollDir);
+      }
+        prevElapsedMillis = currentTime;
     }
 }
 /**/
@@ -139,5 +164,5 @@ void setup()
 void loop() {
     readPMWSensor();
     readButtons();
-    readEncoder();
+    updateScroll();
 }
