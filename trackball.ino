@@ -37,8 +37,10 @@ constexpr static uint8_t ENCODER_B = 1;
 // Trackball settings
 constexpr static uint16_t CPI = 800;
 constexpr static uint16_t TIME_TO_SCROLL = 150; // ms
-constexpr static uint16_t SCROLL_SPEED_CLAMP = 4;
+constexpr static uint16_t TIME_TO_BUTTON = 10;  // ms
+constexpr static uint16_t SCROLL_SPEED_CLAMP = 5;
 //
+
 PMW3360_DATA data;
 
 volatile int8_t scrollDir = 0;
@@ -46,7 +48,8 @@ uint8_t lastEncoded = 0;
 // ATTENTION: Right now there is no overflow guard. It will overflow in around
 // 50 days. Who ever has this turned on for that long? If you do, add an
 // overflow guard in the main loop
-unsigned long prevElapsedMillis = 0;
+unsigned long prevElapsedMillisEncoder = 0;
+unsigned long prevElapsedMillisButton = 0;
 
 struct ButtonData {
   uint8_t pin;
@@ -54,8 +57,8 @@ struct ButtonData {
 };
 
 constexpr static uint8_t NUM_BUTTONS = 3;
-constexpr static ButtonData buttons[NUM_BUTTONS] = 
-    {{B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}};
+constexpr static ButtonData buttons[NUM_BUTTONS] = {
+    {B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}};
 uint8_t previousButtonVals[NUM_BUTTONS] = {false};
 
 /* BUTTONS FUNCTIONS */
@@ -65,20 +68,21 @@ void setupButtons() {
   pinMode(B3_PIN, INPUT_PULLUP);
 }
 
-void readButtons() {
+void readButtons(unsigned long currentTime) {
+  if (currentTime - prevElapsedMillisButton < TIME_TO_BUTTON) {
+    return;
+  }
   for (int i = 0; i < NUM_BUTTONS; i++) {
     uint8_t bVal = digitalRead(buttons[i].pin);
     if (bVal && previousButtonVals[i]) {
       Mouse.release(buttons[i].mButton);
       previousButtonVals[i] = false;
-    }
-    else if (!bVal) {
+    } else if (!bVal) {
       Mouse.press(buttons[i].mButton);
       previousButtonVals[i] = true;
     }
   }
-  // add a delay to avoid double click ghosting
-  delay(10);
+  prevElapsedMillisButton = currentTime;
 }
 
 /* PMW3360 FUNCTIONS */
@@ -118,7 +122,8 @@ void updateEncoder() {
   int LSB = digitalRead(ENCODER_B); // LSB = least significant bit
 
   int encoded = (MSB << 1) | LSB; // Converting the 2 pin value to single number
-  int sum = (lastEncoded << 2) | encoded; // Adding it to the previous encoded value
+  int sum =
+      (lastEncoded << 2) | encoded; // Adding it to the previous encoded value
 
   if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
     scrollDir--;
@@ -131,16 +136,16 @@ void updateEncoder() {
   lastEncoded = encoded; // Store this value for next time
 }
 
-void updateScroll() {
-  unsigned long currentTime = millis();
-  if (currentTime - prevElapsedMillis > TIME_TO_SCROLL) {
-    // this guard is for keeping the pro micro light off. It will seem like a
-    // disco ball blinking constantly if we always call Mouse.move
-    if (scrollDir != 0) {
-      Mouse.move(0, 0, scrollDir);
-    }
-    prevElapsedMillis = currentTime;
+void updateScroll(unsigned long currentTime) {
+  if (currentTime - prevElapsedMillisEncoder < TIME_TO_SCROLL) {
+    return;
   }
+  // this guard is for keeping the pro micro light off. It will seem like a
+  // disco ball blinking constantly if we always call Mouse.move
+  if (scrollDir != 0) {
+    Mouse.move(0, 0, scrollDir);
+  }
+  prevElapsedMillisEncoder = currentTime;
 }
 /**/
 
@@ -148,11 +153,14 @@ void setup() {
   setupButtons();
   setupEncoder();
   Mouse.begin();
-  pmwSensor.begin(SS_PIN, CPI); // to set CPI (Count per Inch), pass it as the second parameter
+  pmwSensor.begin(
+      SS_PIN,
+      CPI); // to set CPI (Count per Inch), pass it as the second parameter
 }
 
 void loop() {
+  unsigned long currentTime = millis();
   readPMWSensor();
-  readButtons();
-  updateScroll();
+  readButtons(currentTime);
+  updateScroll(currentTime);
 }
