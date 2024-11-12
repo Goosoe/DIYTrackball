@@ -48,8 +48,9 @@ uint8_t lastEncoded = 0;
 // ATTENTION: Right now there is no overflow guard. It will overflow in around
 // 50 days. Who ever has this turned on for that long? If you do, add an
 // overflow guard in the main loop
-unsigned long prevElapsedMillisEncoder = 0;
-unsigned long prevElapsedMillisButton = 0;
+static unsigned long currentTime = 0;
+static unsigned long prevElapsedMillisEncoder = 0;
+static unsigned long prevElapsedMillisButton = 0;
 
 struct ButtonData {
   uint8_t pin;
@@ -68,7 +69,7 @@ void setupButtons() {
   pinMode(B3_PIN, INPUT_PULLUP);
 }
 
-void readButtons(unsigned long currentTime) {
+void readButtons() {
   if (currentTime - prevElapsedMillisButton < TIME_TO_BUTTON) {
     return;
   }
@@ -136,7 +137,7 @@ void updateEncoder() {
   lastEncoded = encoded; // Store this value for next time
 }
 
-void updateScroll(unsigned long currentTime) {
+void updateScroll() {
   if (currentTime - prevElapsedMillisEncoder < TIME_TO_SCROLL) {
     return;
   }
@@ -159,8 +160,8 @@ void setup() {
 }
 
 void loop() {
-  unsigned long currentTime = millis();
+  currentTime = millis();
   readPMWSensor();
-  readButtons(currentTime);
-  updateScroll(currentTime);
+  readButtons();
+  updateScroll();
 }
