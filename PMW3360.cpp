@@ -588,34 +588,34 @@ bool PMW3360::check_signature() {
 /* 
 prepareImage: prepare a raw image capture from the snesor
 */
-void PMW3360::prepareImage()
-{
-  SPI_BEGIN;
+// void PMW3360::prepareImage()
+// {
+//   SPI_BEGIN;
 
-  adns_write_reg(REG_Config2, 0x00);
+//   adns_write_reg(REG_Config2, 0x00);
 
-  adns_write_reg(REG_Frame_Capture, 0x83);
-  adns_write_reg(REG_Frame_Capture, 0xc5);  
+//   adns_write_reg(REG_Frame_Capture, 0x83);
+//   adns_write_reg(REG_Frame_Capture, 0xc5);  
 
-  delay(20);
+//   delay(20);
 
-  BEGIN_COM;
-  SPI.transfer(REG_Raw_Data_Burst & 0x7f);
-  delayMicroseconds(20);  
-}
-/* 
-readImagePixel: prepare a raw image capture from the snesor
-*/
-byte PMW3360::readImagePixel()
-{
-  byte pixel = SPI.transfer(0);
-  delayMicroseconds(20);
+//   BEGIN_COM;
+//   SPI.transfer(REG_Raw_Data_Burst & 0x7f);
+//   delayMicroseconds(20);  
+// }
+// /* 
+// readImagePixel: prepare a raw image capture from the snesor
+// */
+// byte PMW3360::readImagePixel()
+// {
+//   byte pixel = SPI.transfer(0);
+//   delayMicroseconds(20);
 
-  return pixel;
-}
+//   return pixel;
+// }
 
-void PMW3360::endImage()
-{
-  END_COM;
-  SPI_END;
-}
+// void PMW3360::endImage()
+// {
+//   END_COM;
+//   SPI_END;
+// }

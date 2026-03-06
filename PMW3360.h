@@ -137,9 +137,9 @@ public:
   	void readBurst(PMW3360_DATA& data);
   	byte readReg(byte reg_addr);
   	void writeReg(byte reg_addr, byte data);
-  	void prepareImage();
-  	byte readImagePixel();
-  	void endImage();
+  	// void prepareImage();
+  	// byte readImagePixel();
+  	// void endImage();
 
 private:
 	unsigned int _ss;

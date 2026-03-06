@@ -38,7 +38,7 @@ constexpr static uint8_t ENCODER_B = 1;
 constexpr static uint16_t CPI = 800;
 constexpr static uint16_t TIME_TO_SCROLL = 150; // ms
 constexpr static uint16_t TIME_TO_BUTTON = 10;  // ms
-constexpr static uint16_t SCROLL_SPEED_CLAMP = 5;
+constexpr static uint16_t SCROLL_SPEED_CLAMP = 8;
 //
 
 PMW3360_DATA data;
@@ -126,12 +126,28 @@ void updateEncoder() {
   int sum =
       (lastEncoded << 2) | encoded; // Adding it to the previous encoded value
 
-  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
-    scrollDir--;
+  if (sum == 0b1101 || sum == 0b1011) {     //|| sum == 0b0100 || sum == 0b0010 
+    // Hard stop when decreasing from a positive scroll
+    if (scrollDir > 0)
+    {
+      scrollDir = 0;
+    }
+    else
+    {
+      --scrollDir;
+    }
   }
 
-  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {
-    scrollDir++;
+  if (sum == 0b1110 || sum == 0b0111 ){ //|| sum == 0b0001 || sum == 0b1000) {
+    // Hard stop when increasing from a negative scroll
+    if (scrollDir < 0)
+    {
+      scrollDir = 0;
+    }
+    else
+    {
+      ++scrollDir;
+    }
   }
   constrain(scrollDir, -SCROLL_SPEED_CLAMP, SCROLL_SPEED_CLAMP);
   lastEncoded = encoded; // Store this value for next time
@@ -148,7 +164,6 @@ void updateScroll() {
   }
   prevElapsedMillisEncoder = currentTime;
 }
-/**/
 
 void setup() {
   setupButtons();
