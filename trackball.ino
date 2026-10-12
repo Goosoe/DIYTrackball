@@ -1,5 +1,6 @@
 #include "PMW3360.h"
-#include <Mouse.h>
+//#include <Mouse.h>
+#include "HID-Project.h"
 
 /*
 # PIN CONNECTION
@@ -36,10 +37,8 @@ constexpr static uint8_t JOY_X = 20;
 constexpr static uint8_t JOY_Y = 19;
 
 // Trackball settings
-//constexpr static uint16_t CPI = 800;
-//constexpr static uint16_t TIME_TO_SCROLL = 150; // ms
+constexpr static uint16_t TIME_TO_JOYSTICK = 200; // ms
 constexpr static uint16_t TIME_TO_BUTTON = 10;  // ms
-constexpr static uint16_t SCROLL_SPEED_CLAMP = 8;
 //
 
 PMW3360_DATA data;
@@ -50,19 +49,20 @@ PMW3360_DATA data;
 // 50 days. Who ever has this turned on for that long? If you do, add an
 // overflow guard in the main loop
 static unsigned long currentTime = 0;
-//static unsigned long prevElapsedMillisEncoder = 0;
+static unsigned long prevElapsedMillisJoystick = 0;
 static unsigned long prevElapsedMillisButton = 0;
-static uint8_t currentCPI = 1;
+static uint8_t currentCPI = 0;
 
 struct ButtonData {
   uint8_t pin;
   uint8_t mButton;
 };
 constexpr static uint8_t CPI_LEVEL_SIZE = 3;
-constexpr static unsigned int CPI_LEVELS[CPI_LEVEL_SIZE] = {400 , 800, 1200};
+constexpr static unsigned int CPI_LEVELS[CPI_LEVEL_SIZE] = {500 , 800, 1200};
 constexpr static uint8_t NUM_BUTTONS = 4;
+#define NOT_USED 99
 constexpr static ButtonData buttons[NUM_BUTTONS] = {
-    {B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}, {B4_PIN, currentCPI}
+    {B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}, {B4_PIN, NOT_USED}
 };
 uint8_t previousButtonVals[NUM_BUTTONS] = {false};
 
@@ -74,7 +74,7 @@ void setupButtons() {
   pinMode(B4_PIN, INPUT_PULLUP);
 }
 
-setupJoystick() {
+void setupJoystick() {
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
 }
@@ -83,6 +83,8 @@ void readButtons() {
   if (currentTime - prevElapsedMillisButton < TIME_TO_BUTTON) {
     return;
   }
+  prevElapsedMillisButton = currentTime;
+
   for (int i = 0; i < NUM_BUTTONS - 1; i++) {
     uint8_t bVal = digitalRead(buttons[i].pin);
     if (bVal && previousButtonVals[i]) {
@@ -98,16 +100,13 @@ void readButtons() {
   // the CPI button
     uint8_t bVal = digitalRead(buttons[cpiButtonId].pin);
     if (bVal && previousButtonVals[cpiButtonId]) {
-      buttons[i].mButton = (buttons[cpiButtonIdi].mButton + 1) % CPI_LEVEL_SIZE;
-      pmwSensor.SetCpi(CPI_LEVELS[buttons[i].mButton];
-      //Mouse.release(buttons[i].mButton);
+      currentCPI = (currentCPI + 1) % CPI_LEVEL_SIZE;
+      pmwSensor.setCPI(CPI_LEVELS[currentCPI]);
       previousButtonVals[cpiButtonId] = false;
     } else if (!bVal) {
-      //Mouse.press(buttons[i].mButton);
       previousButtonVals[cpiButtonId] = true;
     }
 
-  prevElapsedMillisButton = currentTime;
 }
 
 /* PMW3360 FUNCTIONS */
@@ -133,98 +132,49 @@ void readPMWSensor() {
   }
 }
 
-/* ENCODER FUNCTIONS */
-//void setupEncoder() {
-//  pinMode(JOY_X, INPUT_PULLUP);
-//  pinMode(JOY_Y, INPUT_PULLUP);
-//  // We will be using interrupts to receive the encoder data
-//  attachInterrupt(digitalPinToInterrupt(JOY_X), updateEncoder, CHANGE);
-//  attachInterrupt(digitalPinToInterrupt(JOY_Y), updateEncoder, CHANGE);
-//}
-//
-//void updateEncoder() {
-//  int MSB = digitalRead(JOY_X); // MSB = most significant bit
-//  int LSB = digitalRead(JOY_Y); // LSB = least significant bit
-//
-//  int encoded = (MSB << 1) | LSB; // Converting the 2 pin value to single number
-//  int sum =
-//      (lastEncoded << 2) | encoded; // Adding it to the previous encoded value
-//
-//  if (sum == 0b1101 || sum == 0b1011) {     //|| sum == 0b0100 || sum == 0b0010 
-//    // Hard stop when decreasing from a positive scroll
-//    if (scrollDir > 0)
-//    {
-//      scrollDir = 0;
-//    }
-//    else
-//    {
-//      --scrollDir;
-//    }
-//  }
-//
-//  if (sum == 0b1110 || sum == 0b0111 ){ //|| sum == 0b0001 || sum == 0b1000) {
-//    // Hard stop when increasing from a negative scroll
-//    if (scrollDir < 0)
-//    {
-//      scrollDir = 0;
-//    }
-//    else
-//    {
-//      ++scrollDir;
-//    }
-//  }
-//  constrain(scrollDir, -SCROLL_SPEED_CLAMP, SCROLL_SPEED_CLAMP);
-//  lastEncoded = encoded; // Store this value for next time
-//}
-//
-//void updateScroll() {
-//  if (currentTime - prevElapsedMillisEncoder < TIME_TO_SCROLL) {
-//    return;
-//  }
-//  // this guard is for keeping the pro micro light off. It will seem like a
-//  // disco ball blinking constantly if we always call Mouse.move
-//  if (scrollDir != 0) {
-//    Mouse.move(0, 0, scrollDir);
-//  }
-//  prevElapsedMillisEncoder = currentTime;
-//}
 void readJoystick()
 {
+  if (currentTime - prevElapsedMillisJoystick < TIME_TO_JOYSTICK) {
+    return;
+  }
+  prevElapsedMillisJoystick = currentTime;
+
   constexpr int SPEEDS_SIZE = 5;
   constexpr int SCROLL_SPEEDS[SPEEDS_SIZE] = {1,2,3,4,5};
-  constexpr int CENTER = 345;
+
+  constexpr int CENTER = 512;
   constexpr int MAX = CENTER * 2;
-  constexpr int DEADZONE = 35;
+  constexpr int DEADZONE = 75;
   constexpr int ZONE_SIZE = (CENTER) / SPEEDS_SIZE;
-  uint8_t speedStage[2] = {0}; 
+  //uint8_t speedStage[2] = {0}; 
 
-  int x = analogRead(JOY_X);
-  if(x < CENTER - DEADZONE )
-  {
-
-  Serial.print("DOWN ZONE: ");
-  Serial.println( (x - CENTER) / ZONE_SIZE  + 1);
-  
-  }
-  else if(x > CENTER + DEADZONE)
-  {
-  Serial.print("UP ZONE: ");
-  Serial.println( ((x - CENTER ) / ZONE_SIZE - 1));
-  }
-
+  //The joystick is sideways so X is actually "y"
   int y = analogRead(JOY_Y);
-  if(y < CENTER - DEADZONE )
+  int x = analogRead(JOY_X);
+  int zoneY = y / 128;
+  int zoneX = y / 128;
+  int valuePerZone[8] = { 5, 4, 2, 1, 1, 2, 4, 5 };
+  if(y < CENTER - DEADZONE)
   {
+    Serial.println( valuePerZone[zoneY] );
+    Mouse.move(0, 0, valuePerZone[zoneY]);
+  }
+  else if(y > CENTER + DEADZONE)
+  {
+    Serial.println( valuePerZone[zoneY] );
+    Mouse.move(0, 0, -valuePerZone[zoneY]);
+  }
 
-  Serial.print("LEFT ZONE: ");
-  Serial.println( (y - CENTER) / ZONE_SIZE  + 1);
-  
-  }
-  else if(x > CENTER + DEADZONE)
-  {
-  Serial.print("RIGHT ZONE: ");
-  Serial.println( ((y - CENTER ) / ZONE_SIZE - 1));
-  }
+  //if(x < CENTER - DEADZONE)
+  //{
+  //  Serial.println( valuePerZone[zoneX] );
+  //  Mouse.move(0, 0, valuePerZone[zoneX]);
+  //}
+  //else if(x > CENTER + DEADZONE)
+  //{
+  //  Serial.println( valuePerZone[zoneX] );
+  //  Mouse.move(0, 0, -valuePerZone[zoneX]);
+  //}
 }
 
 void setup() {
