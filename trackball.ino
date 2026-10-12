@@ -1,6 +1,6 @@
 #include "PMW3360.h"
-//#include <Mouse.h>
-#include "HID-Project.h"
+#include <Mouse.h>
+//#include "HID-Project.h"
 
 /*
 # PIN CONNECTION
@@ -49,7 +49,8 @@ PMW3360_DATA data;
 // 50 days. Who ever has this turned on for that long? If you do, add an
 // overflow guard in the main loop
 static unsigned long currentTime = 0;
-static unsigned long prevElapsedMillisJoystick = 0;
+//static unsigned long prevElapsedMillisJoystickX = 0;
+static unsigned long prevElapsedMillisJoystickY = 0;
 static unsigned long prevElapsedMillisButton = 0;
 static uint8_t currentCPI = 0;
 
@@ -57,6 +58,7 @@ struct ButtonData {
   uint8_t pin;
   uint8_t mButton;
 };
+
 constexpr static uint8_t CPI_LEVEL_SIZE = 3;
 constexpr static unsigned int CPI_LEVELS[CPI_LEVEL_SIZE] = {500 , 800, 1200};
 constexpr static uint8_t NUM_BUTTONS = 4;
@@ -64,6 +66,8 @@ constexpr static uint8_t NUM_BUTTONS = 4;
 constexpr static ButtonData buttons[NUM_BUTTONS] = {
     {B1_PIN, MOUSE_LEFT}, {B2_PIN, MOUSE_RIGHT}, {B3_PIN, MOUSE_MIDDLE}, {B4_PIN, NOT_USED}
 };
+constexpr static uint16_t CURSOR_DEADZONE= 10;
+
 uint8_t previousButtonVals[NUM_BUTTONS] = {false};
 
 /* BUTTONS FUNCTIONS */
@@ -128,59 +132,54 @@ average raw data values within normal operating ranges.
 void readPMWSensor() {
   pmwSensor.readBurst(data);
   if (data.isOnSurface && data.isMotion) {
+  
     Mouse.move(data.dy, data.dx, 0);
   }
 }
 
 void readJoystick()
 {
-  if (currentTime - prevElapsedMillisJoystick < TIME_TO_JOYSTICK) {
-    return;
-  }
-  prevElapsedMillisJoystick = currentTime;
 
   constexpr int SPEEDS_SIZE = 5;
   constexpr int SCROLL_SPEEDS[SPEEDS_SIZE] = {1,2,3,4,5};
 
   constexpr int CENTER = 512;
   constexpr int MAX = CENTER * 2;
-  constexpr int DEADZONE = 75;
+  constexpr int DEADZONE = 55;
   constexpr int ZONE_SIZE = (CENTER) / SPEEDS_SIZE;
+  constexpr int ZONE_DIVISION = 128;
+
+  constexpr int MAX_TIME = 300;
+  constexpr int MIN_TIME = 25;
   //uint8_t speedStage[2] = {0}; 
 
   //The joystick is sideways so X is actually "y"
   int y = analogRead(JOY_Y);
-  int x = analogRead(JOY_X);
-  int zoneY = y / 128;
-  int zoneX = y / 128;
-  int valuePerZone[8] = { 5, 4, 2, 1, 1, 2, 4, 5 };
-  if(y < CENTER - DEADZONE)
-  {
-    Serial.println( valuePerZone[zoneY] );
-    Mouse.move(0, 0, valuePerZone[zoneY]);
-  }
-  else if(y > CENTER + DEADZONE)
-  {
-    Serial.println( valuePerZone[zoneY] );
-    Mouse.move(0, 0, -valuePerZone[zoneY]);
-  }
 
-  //if(x < CENTER - DEADZONE)
-  //{
-  //  Serial.println( valuePerZone[zoneX] );
-  //  Mouse.move(0, 0, valuePerZone[zoneX]);
-  //}
-  //else if(x > CENTER + DEADZONE)
-  //{
-  //  Serial.println( valuePerZone[zoneX] );
-  //  Mouse.move(0, 0, -valuePerZone[zoneX]);
-  //}
+  int deltaY = y - CENTER;
+  if(abs(deltaY) > DEADZONE)
+  {
+
+    int speedDelay = map(abs(deltaY), DEADZONE, CENTER, MAX_TIME, MIN_TIME);
+
+// 2. Only send exactly ONE scroll report per timed interval
+    if (currentTime - prevElapsedMillisJoystickY >= (unsigned long)speedDelay) {
+      if (deltaY > 0)
+      {
+        Mouse.move(0, 0, -1);
+      }
+      else
+      {
+        Mouse.move(0, 0, 1);
+      }
+      prevElapsedMillisJoystickY = currentTime; // Reset the interval timer
+    }
+  }
 }
 
 void setup() {
   setupButtons();
   setupJoystick();
-  //setupEncoder();
   Mouse.begin();
   pmwSensor.begin(
       SS_PIN,
@@ -193,5 +192,4 @@ void loop() {
   readPMWSensor();
   readButtons();
   readJoystick();
-  //updateScroll();
 }
