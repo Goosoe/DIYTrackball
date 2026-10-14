@@ -30,8 +30,8 @@ PMW3360 pmwSensor;
 
 // Slave Select pin. Connect this to SS on the module.
 constexpr static uint8_t SS_PIN = 18;
-constexpr static uint8_t B1_PIN = 2;
-constexpr static uint8_t B2_PIN = 3;
+constexpr static uint8_t B1_PIN = 3;   // Switch these as needed - e.g. misoddering
+constexpr static uint8_t B2_PIN = 2;
 constexpr static uint8_t B3_PIN = 21;  // JOYSTICK BTN
 constexpr static uint8_t B4_PIN = 4;
 constexpr static uint8_t JOY_X = 20;
@@ -56,8 +56,8 @@ struct ButtonData {
   uint8_t mButton;
 };
 
-constexpr static uint8_t CPI_LEVEL_SIZE = 3;
-constexpr static unsigned int CPI_LEVELS[CPI_LEVEL_SIZE] = { 500, 800, 1200 };
+constexpr static uint8_t CPI_LEVEL_SIZE = 4;
+constexpr static unsigned int CPI_LEVELS[CPI_LEVEL_SIZE] = { 300, 500, 800, 1200 };
 constexpr static uint8_t NUM_BUTTONS = 4;
 #define NOT_USED 99
 constexpr static ButtonData buttons[NUM_BUTTONS] = {
@@ -131,7 +131,10 @@ void readPMWSensor() {
   pmwSensor.readBurst(data);
   if (data.isOnSurface && data.isMotion) {
 
-    Mouse.move(data.dy, data.dx, 0);
+    if( data.dy != 0 || data.dx != 0)
+    {
+      Mouse.move(data.dy, data.dx, 0);
+    }
   }
 }
 
