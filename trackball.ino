@@ -105,7 +105,10 @@ average raw data values within normal operating ranges.
 void readPMWSensor() {
   pmwSensor.readBurst(data);
   if (data.isOnSurface && data.isMotion) {
-    Mouse.move(data.dy, data.dx, 0);
+    if(data.dy != 0 || data.dx != 0)
+    {
+      Mouse.move(data.dy, data.dx, 0);
+    }
   }
 }
 
